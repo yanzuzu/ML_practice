@@ -36,15 +36,24 @@ public class ANN{
 		}
 	}
 
-	public List<double> Go(List<double> inputValues, List<double> desiredOutput)
+	public List<double> Train(List<double> inputValues, List<double> desiredOutput)
+	{
+		List<double> outputValues = new List<double>();
+		outputValues = CalcOutput(inputValues, desiredOutput);
+		UpdateWeights(outputValues, desiredOutput);
+		return outputValues;
+	}
+
+	public List<double> CalcOutput(List<double> inputValues, List<double> desiredOutput)
 	{
 		List<double> inputs = new List<double>();
-		List<double> outputs = new List<double>();
+		List<double> outputValues = new List<double>();
+		int currentInput = 0;
 
 		if(inputValues.Count != numInputs)
 		{
 			Debug.Log("ERROR: Number of Inputs must be " + numInputs);
-			return outputs;
+			return outputValues;
 		}
 
 		inputs = new List<double>(inputValues);
@@ -52,9 +61,9 @@ public class ANN{
 		{
 				if(i > 0)
 				{
-					inputs = new List<double>(outputs);
+					inputs = new List<double>(outputValues);
 				}
-				outputs.Clear();
+				outputValues.Clear();
 
 				for(int j = 0; j < layers[i].numNeurons; j++)
 				{
@@ -63,19 +72,57 @@ public class ANN{
 
 					for(int k = 0; k < layers[i].neurons[j].numInputs; k++)
 					{
-					    layers[i].neurons[j].inputs.Add(inputs[k]);
-						N += layers[i].neurons[j].weights[k] * inputs[k];
+					    layers[i].neurons[j].inputs.Add(inputs[currentInput]);
+						N += layers[i].neurons[j].weights[k] * inputs[currentInput];
+						currentInput++;
 					}
 
 					N -= layers[i].neurons[j].bias;
-					layers[i].neurons[j].output = ActivationFunction(N);
-					outputs.Add(layers[i].neurons[j].output);
+
+					if(i == numHidden)
+						layers[i].neurons[j].output = ActivationFunctionO(N);
+					else
+						layers[i].neurons[j].output = ActivationFunction(N);
+					
+					outputValues.Add(layers[i].neurons[j].output);
+					currentInput = 0;
 				}
 		}
+		return outputValues;
+	}
 
-		UpdateWeights(outputs, desiredOutput);
+	public string PrintWeights()
+	{
+		string weightStr = "";
+		foreach(Layer l in layers)
+		{
+			foreach(Neuron n in l.neurons)
+			{
+				foreach(double w in n.weights)
+				{
+					weightStr += w + ",";
+				}
+			}
+		}
+		return weightStr;
+	}
 
-		return outputs;
+	public void LoadWeights(string weightStr)
+	{
+		if(weightStr == "") return;
+		string[] weightValues = weightStr.Split(',');
+		int w = 0;
+		foreach(Layer l in layers)
+		{
+			foreach(Neuron n in l.neurons)
+			{
+				for(int i = 0; i < n.weights.Count; i++)
+				{
+					n.weights[i] = System.Convert.ToDouble(weightValues[w]);
+					w++;
+				}
+			}
+		}
 	}
 	
 	void UpdateWeights(List<double> outputs, List<double> desiredOutput)
@@ -89,7 +136,6 @@ public class ANN{
 				{
 					error = desiredOutput[j] - outputs[j];
 					layers[i].neurons[j].errorGradient = outputs[j] * (1-outputs[j]) * error;
-					//errorGradient calculated with Delta Rule: en.wikipedia.org/wiki/Delta_rule
 				}
 				else
 				{
@@ -120,20 +166,23 @@ public class ANN{
 
 	}
 
-	//for full list of activation functions
-	//see en.wikipedia.org/wiki/Activation_function
 	double ActivationFunction(double value)
 	{
-		return Sigmoid(value);
+		return TanH(value);
 	}
 
-	double Step(double value) //(aka binary step)
+	double ActivationFunctionO(double value)
 	{
-		if(value < 0) return 0;
-		else return 1;
+		return TanH(value);
 	}
 
-	double Sigmoid(double value) //(aka logistic softstep)
+	double TanH(double value)
+	{
+		double k = (double) System.Math.Exp(-2*value);
+    	return 2 / (1.0f + k) - 1;
+	}
+
+	double Sigmoid(double value) 
 	{
     	double k = (double) System.Math.Exp(value);
     	return k / (1.0f + k);
