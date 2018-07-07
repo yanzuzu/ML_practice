@@ -1,11 +1,18 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using PingPong;
+using UnityEngine.UI;
 
 public class PingPongBrain : MonoBehaviour {
 
 	public GameObject paddle;
-	public GameObject ball;
+	public MoveBall ball;
+	public GameObject playerPaddle;
+
+	public Text PlayerScoreTxt;
+	public Text AiScoreTxt;
+
 	Rigidbody2D brb;
 	float yvel;
 	float paddleMinY = 8.8f;
@@ -19,7 +26,7 @@ public class PingPongBrain : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		ann = new ANN(6, 1, 1, 4, 0.11);
-		brb = ball.GetComponent<Rigidbody2D>();		
+		brb = ball.gameObject.GetComponent<Rigidbody2D>();		
 	}
 
 	List<double> Run(double bx, double by, double bvx, double bvy, double px, double py, double pv, bool train)
@@ -73,5 +80,31 @@ public class PingPongBrain : MonoBehaviour {
         }
         else
         	yvel = 0;
+
+		ProcessPlayerPaddle ();
+
+		UpdateScore ();
+	}
+
+	private void ProcessPlayerPaddle()
+	{
+		float moveDelta = 0f;
+		if (Input.GetKey (KeyCode.W))
+		{
+			moveDelta = 1f;
+		} else if (Input.GetKey (KeyCode.S))
+		{
+			moveDelta = -1f;
+		} 
+
+		Vector3 pos = playerPaddle.transform.position;
+		pos.y = Mathf.Clamp (pos.y + moveDelta * Time.deltaTime * paddleMaxSpeed, paddleMinY, paddleMaxY);
+		playerPaddle.transform.position = pos;
+	}
+
+	private void UpdateScore()
+	{
+		PlayerScoreTxt.text = string.Format("Player: {0}", ball.GetScore (true));
+		AiScoreTxt.text =string.Format("AI: {0}", ball.GetScore (false));
 	}
 }

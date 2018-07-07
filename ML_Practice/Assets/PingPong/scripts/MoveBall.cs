@@ -6,13 +6,16 @@ namespace PingPong
 {
 	public class MoveBall : MonoBehaviour 
 	{
-		private const float BALL_SPEED = 400;
+		private const float BALL_SPEED = 600;
 
 		public AudioSource Blip;
 		public AudioSource Blop;
 
 		private Vector3 m_startPos;
 		private Rigidbody2D m_rigid;
+
+		private int m_playerScore = 0;
+		private int m_aiScore = 0;
 
 		void Start () 
 		{
@@ -23,10 +26,15 @@ namespace PingPong
 
 		void OnCollisionEnter2D( Collision2D colld )
 		{
-			if (colld.gameObject.tag == "backwall")
+			if (colld.gameObject.tag == "frontWall")
 			{
 				Blop.Play ();
-			} else
+				m_aiScore++;
+			} else if (colld.gameObject.tag == "backwall")
+			{
+				Blop.Play ();
+				m_playerScore++;
+			}else
 			{
 				Blip.Play ();
 			}
@@ -46,7 +54,19 @@ namespace PingPong
 			if (UnityEngine.Input.GetKeyDown (KeyCode.Space))
 			{
 				ResetBall ();
+				ResetScore ();
 			}
+		}
+
+		public int GetScore(bool isPlayer )
+		{
+			return isPlayer ? m_playerScore : m_aiScore;
+		}
+
+		public void ResetScore()
+		{
+			m_playerScore = 0;
+			m_aiScore = 0;
 		}
 	}
 }
